@@ -8,17 +8,28 @@ public class Player : MonoBehaviour
     public float jumpForce = 10;
     public bool onGround = true;
     public bool faceRight = true;
+    public bool isBlocking = false;
     public Animator anim;
     Rigidbody playerRigidBody;
-    public GameObject punchHitbox;
-    public GameObject kickHitbox;
-    public GameObject runningKickHitbox;
+    public GameObject leftPunchHitbox;
+    public GameObject leftKickHitbox;
+    public GameObject leftRunningKickHitbox;
+    public GameObject rightPunchHitbox;
+    public GameObject rightKickHitbox;
+    public GameObject rightRunningKickHitbox;
+
 
     // Start is called before the first frame update
     void Start()
     {
         playerRigidBody = GetComponent<Rigidbody>();
         onGround = true;
+        leftPunchHitbox.SetActive(false);
+        leftKickHitbox.SetActive(false);
+        leftRunningKickHitbox.SetActive(false);
+        rightPunchHitbox.SetActive(false);
+        rightKickHitbox.SetActive(false);
+        rightRunningKickHitbox.SetActive(false);
     }
 
     // Update is called once per frame
@@ -64,32 +75,34 @@ public class Player : MonoBehaviour
             {
                 anim.speed = 1;
                 anim.SetBool("Block", false);
+                isBlocking = false;
             }
-            if (horizontal > 0.03f && !isFlyingKick && !isInAnimation)
-            {
-                faceRight = true;
-                anim.SetBool("FaceLeft", false);
 
-                if ((Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.L)))
-                {
-                    StartCoroutine(RunningKickCoroutine());
-                }
-            }
-            else if (horizontal < -0.03f && !isFlyingKick && !isInAnimation)
+            if (!isInAnimation && !isFlyingKick)
             {
-                faceRight = false;
-                anim.SetBool("FaceLeft", true);
+                if (horizontal > 0.03f)
+                {
+                    faceRight = true;
+                    anim.SetBool("FaceLeft", false);
 
-                if ((Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.L)))
-                {
-                    StartCoroutine(RunningKickCoroutine());
+                    if ((Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.L)))
+                    {
+                        StartCoroutine(RunningKickCoroutine());
+                    }
                 }
-            }
-            else
-            {
-                // punch/kick
-                if (!isInAnimation)
+                else if (horizontal < -0.03f)
                 {
+                    faceRight = false;
+                    anim.SetBool("FaceLeft", true);
+
+                    if ((Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.L)))
+                    {
+                        StartCoroutine(RunningKickCoroutine());
+                    }
+                }
+                else
+                {
+                    // punch/kick
                     if (Input.GetKeyDown(KeyCode.K))
                     {
                         StartCoroutine(PunchCoroutine());
@@ -101,7 +114,6 @@ public class Player : MonoBehaviour
                 }
             }
 
-
             if (isFlyingKick)
             {
                 if (faceRight) transform.Translate(Time.deltaTime * (moveSpeed - 2), 0, 0);
@@ -109,14 +121,7 @@ public class Player : MonoBehaviour
             }
             else if (!isInAnimation)
             {
-                if (horizontal <= 0.03f && horizontal >= -0.03f)
-                {
-                    transform.Translate(0, 0, 0);
-                }
-                else
-                {
-                    transform.Translate(horizontal, 0, 0);
-                }
+                transform.Translate(horizontal, 0, 0);
             }
         }
         else
@@ -127,7 +132,7 @@ public class Player : MonoBehaviour
 
 
         // Animation
-        if (horizontal < -0.03f || horizontal > 0.03f)
+        if (horizontal != 0f)
         {
             anim.SetBool("Run", true);
         }
@@ -152,12 +157,21 @@ public class Player : MonoBehaviour
 
     IEnumerator PunchCoroutine()
     {
-        // show hitboxes
         anim.SetTrigger("Punch");
 
-        yield return new WaitForSeconds(0.5f);
-
-        //remove hitboxes;
+        yield return new WaitForSeconds(0.1f);
+        if (faceRight)
+        {
+            rightPunchHitbox.SetActive(true);
+            yield return new WaitForSeconds(0.2f);
+            rightPunchHitbox.SetActive(false);
+        }
+        else
+        {
+            leftPunchHitbox.SetActive(true);
+            yield return new WaitForSeconds(0.2f);
+            leftPunchHitbox.SetActive(false);
+        }
     }
 
     IEnumerator KickCoroutine()
@@ -165,9 +179,19 @@ public class Player : MonoBehaviour
         // show hitboxes
         anim.SetTrigger("Kick");
 
-        yield return new WaitForSeconds(0.5f);
-
-        //remove hitboxes;
+        yield return new WaitForSeconds(0.3f);
+        if (faceRight)
+        {
+            rightKickHitbox.SetActive(true);
+            yield return new WaitForSeconds(0.2f);
+            rightKickHitbox.SetActive(false);
+        }
+        else
+        {
+            leftKickHitbox.SetActive(true);
+            yield return new WaitForSeconds(0.2f);
+            leftKickHitbox.SetActive(false);
+        }
     }
 
     IEnumerator RunningKickCoroutine()
@@ -175,15 +199,27 @@ public class Player : MonoBehaviour
         // show hitboxes
         anim.SetTrigger("RunKick");
 
-        yield return new WaitForSeconds(0.4f);
 
-        //remove hitboxes;
+        yield return new WaitForSeconds(0.2f);
+        if (faceRight)
+        {
+            rightRunningKickHitbox.SetActive(true);
+            yield return new WaitForSeconds(0.3f);
+            rightRunningKickHitbox.SetActive(false);
+        }
+        else
+        {
+            leftRunningKickHitbox.SetActive(true);
+            yield return new WaitForSeconds(0.3f);
+            leftRunningKickHitbox.SetActive(false);
+        }
     }
 
     IEnumerator StartBlockCoroutine()
     {
         anim.SetBool("Block", true);
         anim.Play("Block", 0, 0.2f);
+        isBlocking = true;
         yield return new WaitForSeconds(0.2f);
 
         if (Input.GetKey(KeyCode.J))
@@ -193,6 +229,7 @@ public class Player : MonoBehaviour
         else
         {
             anim.SetBool("Block", false);
+            isBlocking = false;
         }
 
     }
