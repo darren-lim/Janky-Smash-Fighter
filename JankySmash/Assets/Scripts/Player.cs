@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public float moveSpeed = 8;
+    public float healthPercent = 0f;
+    public float knockbackValue = 3f;
+    public float moveSpeed = 7;
     public float jumpForce = 10;
     public bool onGround = true;
     public bool faceRight = true;
@@ -17,6 +19,7 @@ public class Player : MonoBehaviour
     public GameObject rightPunchHitbox;
     public GameObject rightKickHitbox;
     public GameObject rightRunningKickHitbox;
+    public GameObject blockIndicator;
 
 
     // Start is called before the first frame update
@@ -30,6 +33,7 @@ public class Player : MonoBehaviour
         rightPunchHitbox.SetActive(false);
         rightKickHitbox.SetActive(false);
         rightRunningKickHitbox.SetActive(false);
+        blockIndicator.SetActive(false);
     }
 
     // Update is called once per frame
@@ -49,10 +53,6 @@ public class Player : MonoBehaviour
 
     public void Move()
     {
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            StartCoroutine(OnHurtCoroutine());
-        }
         float horizontal = Input.GetAxis("Horizontal") * Time.deltaTime * moveSpeed;
         bool isInAnimation = anim.GetCurrentAnimatorStateInfo(0).IsName("Kicking") || anim.GetCurrentAnimatorStateInfo(0).IsName("Punching") || anim.GetCurrentAnimatorStateInfo(0).IsName("Head Hit") || anim.GetCurrentAnimatorStateInfo(0).IsName("Block");
         bool isFlyingKick = anim.GetCurrentAnimatorStateInfo(0).IsName("Flying Kick");
@@ -63,51 +63,53 @@ public class Player : MonoBehaviour
             {
                 playerRigidBody.AddForce(new Vector3(0f, jumpForce, 0f), ForceMode.Impulse);
                 onGround = false;
+                StopBlocking();
                 anim.SetTrigger("Jump");
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.J) && !isInAnimation && !isFlyingKick)
+            if (Input.GetKeyDown(KeyCode.K) && !isBlocking)
+            {
+                StartCoroutine(PunchCoroutine());
+                return;
+            }
+
+            if (Input.GetKey(KeyCode.J) && !isInAnimation && !isFlyingKick && !isBlocking)
             {
                 StartCoroutine(StartBlockCoroutine());
             }
-            if (Input.GetKeyUp(KeyCode.J))
+            if (isBlocking && Input.GetKeyUp(KeyCode.J))
             {
+                StopBlocking();
+                anim.SetTrigger("BlockToIdle");
                 anim.speed = 1;
-                anim.SetBool("Block", false);
-                isBlocking = false;
             }
 
             if (!isInAnimation && !isFlyingKick)
             {
-                if (horizontal > 0.03f)
+                if (horizontal > 0.01f)
                 {
-                    faceRight = true;
                     anim.SetBool("FaceLeft", false);
+                    faceRight = true;
 
-                    if ((Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.L)))
+                    if (Input.GetKeyDown(KeyCode.L))
                     {
                         StartCoroutine(RunningKickCoroutine());
                     }
                 }
-                else if (horizontal < -0.03f)
+                else if (horizontal < -0.01f)
                 {
-                    faceRight = false;
                     anim.SetBool("FaceLeft", true);
+                    faceRight = false;
 
-                    if ((Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.L)))
+                    if (Input.GetKeyDown(KeyCode.L))
                     {
                         StartCoroutine(RunningKickCoroutine());
                     }
                 }
                 else
                 {
-                    // punch/kick
-                    if (Input.GetKeyDown(KeyCode.K))
-                    {
-                        StartCoroutine(PunchCoroutine());
-                    }
-                    else if (Input.GetKeyDown(KeyCode.L))
+                    if (Input.GetKeyDown(KeyCode.L))
                     {
                         StartCoroutine(KickCoroutine());
                     }
@@ -152,7 +154,26 @@ public class Player : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        Debug.Log("We got hit");
+        // add knockback
+        if (isBlocking)
+        {
+            healthPercent += 2;
+        }
+        if (other.gameObject.tag == "Punch")
+        {
+            healthPercent += (3f + Random.Range(0.1f, 0.4f) * 3f);
+            anim.Play("Head Hit");
+        }
+        else if (other.gameObject.tag == "Kick")
+        {
+            healthPercent += (7f + Random.Range(0.1f, 0.5f) * 5f);
+            anim.Play("Head Hit");
+        }
+        else if (other.gameObject.tag == "RunKick")
+        {
+            healthPercent += (5f + Random.Range(0.1f, 0.7f) * 5f);
+            anim.Play("Head Hit");
+        }
     }
 
     IEnumerator PunchCoroutine()
@@ -199,7 +220,6 @@ public class Player : MonoBehaviour
         // show hitboxes
         anim.SetTrigger("RunKick");
 
-
         yield return new WaitForSeconds(0.2f);
         if (faceRight)
         {
@@ -220,26 +240,27 @@ public class Player : MonoBehaviour
         anim.SetBool("Block", true);
         anim.Play("Block", 0, 0.2f);
         isBlocking = true;
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.15f);
 
-        if (Input.GetKey(KeyCode.J))
+        if (Input.GetKey(KeyCode.J) && onGround)
         {
+            blockIndicator.SetActive(true);
             anim.speed = 0;
         }
         else
         {
             anim.SetBool("Block", false);
             isBlocking = false;
+            blockIndicator.SetActive(false);
         }
 
     }
 
-    IEnumerator OnHurtCoroutine()
+    void StopBlocking()
     {
-        anim.Play("Head Hit");
-
-        yield return new WaitForSeconds(0.4f);
-
-
+        anim.speed = 1;
+        anim.SetBool("Block", false);
+        isBlocking = false;
+        blockIndicator.SetActive(false);
     }
 }

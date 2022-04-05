@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Ground
+  - Punch
+  - Kick
+  - RunKick
   layers:
   - Default
   - TransparentFX
