@@ -1,11 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class Player : MonoBehaviour
 {
     public float healthPercent = 0f;
+    public TMP_Text playerHealthText;
     public float knockbackValue = 3f;
+    public float baseKnockbackValue = 1f;
+    public float punchKnockbackValue = 5f;
+    public float kickKnockbackValue = 10f;
+    public float runKickKnockbackValue = 20f;
     public float moveSpeed = 7;
     public float jumpForce = 10;
     public bool onGround = true;
@@ -46,20 +52,35 @@ public class Player : MonoBehaviour
     {
         if (!onGround)
         {
-            GetComponent<Rigidbody>().AddForce(Physics.gravity * 1.5f, ForceMode.Acceleration);
+            playerRigidBody.AddForce(Physics.gravity * (playerRigidBody.mass * playerRigidBody.mass));
         }
 
     }
 
     public void Move()
     {
+        //         float horizontal = 0f;
+        // if (Input.GetKey(KeyCode.A))
+        // {
+        //     horizontal = -(Time.deltaTime * moveSpeed);
+        // }
+        // else if (Input.GetKey(KeyCode.D))
+        // {
+        //     horizontal = Time.deltaTime * moveSpeed;
+        // }
         float horizontal = Input.GetAxis("Horizontal") * Time.deltaTime * moveSpeed;
         bool isInAnimation = anim.GetCurrentAnimatorStateInfo(0).IsName("Kicking") || anim.GetCurrentAnimatorStateInfo(0).IsName("Punching") || anim.GetCurrentAnimatorStateInfo(0).IsName("Head Hit") || anim.GetCurrentAnimatorStateInfo(0).IsName("Block");
         bool isFlyingKick = anim.GetCurrentAnimatorStateInfo(0).IsName("Flying Kick");
 
+        if (playerRigidBody.velocity.x < -5 || playerRigidBody.velocity.x > 5)
+        {
+            playerRigidBody.velocity = new Vector3(playerRigidBody.velocity.x / 1.1f, playerRigidBody.velocity.y, 0);
+            return;
+        }
+
         if (onGround)
         {
-            if (Input.GetKeyDown(KeyCode.Space))
+            if ((Input.GetKeyDown(KeyCode.Space) || Input.GetButtonDown("Jump")) && !isFlyingKick)
             {
                 playerRigidBody.AddForce(new Vector3(0f, jumpForce, 0f), ForceMode.Impulse);
                 onGround = false;
@@ -68,17 +89,17 @@ public class Player : MonoBehaviour
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.K) && !isBlocking)
+            if ((Input.GetKeyDown(KeyCode.K) || Input.GetButtonDown("Fire1")) && !isBlocking)
             {
                 StartCoroutine(PunchCoroutine());
                 return;
             }
 
-            if (Input.GetKey(KeyCode.J) && !isInAnimation && !isFlyingKick && !isBlocking)
+            if ((Input.GetKey(KeyCode.J) || Input.GetButtonDown("Block")) && !isInAnimation && !isFlyingKick && !isBlocking)
             {
                 StartCoroutine(StartBlockCoroutine());
             }
-            if (isBlocking && Input.GetKeyUp(KeyCode.J))
+            if (isBlocking && (Input.GetKeyUp(KeyCode.J) || Input.GetButtonUp("Block")))
             {
                 StopBlocking();
                 anim.SetTrigger("BlockToIdle");
@@ -92,7 +113,7 @@ public class Player : MonoBehaviour
                     anim.SetBool("FaceLeft", false);
                     faceRight = true;
 
-                    if (Input.GetKeyDown(KeyCode.L))
+                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("Fire2"))
                     {
                         StartCoroutine(RunningKickCoroutine());
                     }
@@ -102,33 +123,28 @@ public class Player : MonoBehaviour
                     anim.SetBool("FaceLeft", true);
                     faceRight = false;
 
-                    if (Input.GetKeyDown(KeyCode.L))
+                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("Fire2"))
                     {
                         StartCoroutine(RunningKickCoroutine());
                     }
                 }
                 else
                 {
-                    if (Input.GetKeyDown(KeyCode.L))
+                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("Fire2"))
                     {
                         StartCoroutine(KickCoroutine());
                     }
                 }
             }
-
-            if (isFlyingKick)
-            {
-                if (faceRight) transform.Translate(Time.deltaTime * (moveSpeed - 2), 0, 0);
-                else transform.Translate(Time.deltaTime * -(moveSpeed - 2), 0, 0);
-            }
-            else if (!isInAnimation)
-            {
-                transform.Translate(horizontal, 0, 0);
-            }
         }
-        else
+
+        if (isFlyingKick)
         {
-            // code flying back state when hit
+            if (faceRight) transform.Translate(Time.deltaTime * (moveSpeed - 2), 0, 0);
+            else transform.Translate(Time.deltaTime * -(moveSpeed - 2), 0, 0);
+        }
+        else if (!isInAnimation)
+        {
             transform.Translate(horizontal, 0, 0);
         }
 
@@ -141,38 +157,6 @@ public class Player : MonoBehaviour
         else
         {
             anim.SetBool("Run", false);
-        }
-    }
-
-    void OnCollisionEnter(Collision other)
-    {
-        if (other.gameObject.CompareTag("Ground"))
-        {
-            onGround = true;
-        }
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        // add knockback
-        if (isBlocking)
-        {
-            healthPercent += 2;
-        }
-        if (other.gameObject.tag == "Punch")
-        {
-            healthPercent += (3f + Random.Range(0.1f, 0.4f) * 3f);
-            anim.Play("Head Hit");
-        }
-        else if (other.gameObject.tag == "Kick")
-        {
-            healthPercent += (7f + Random.Range(0.1f, 0.5f) * 5f);
-            anim.Play("Head Hit");
-        }
-        else if (other.gameObject.tag == "RunKick")
-        {
-            healthPercent += (5f + Random.Range(0.1f, 0.7f) * 5f);
-            anim.Play("Head Hit");
         }
     }
 
@@ -242,7 +226,7 @@ public class Player : MonoBehaviour
         isBlocking = true;
         yield return new WaitForSeconds(0.15f);
 
-        if (Input.GetKey(KeyCode.J) && onGround)
+        if ((Input.GetKey(KeyCode.J) || Input.GetButton("Block")) && onGround)
         {
             blockIndicator.SetActive(true);
             anim.speed = 0;
@@ -262,5 +246,101 @@ public class Player : MonoBehaviour
         anim.SetBool("Block", false);
         isBlocking = false;
         blockIndicator.SetActive(false);
+    }
+
+    void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.CompareTag("Ground"))
+        {
+            onGround = true;
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            onGround = false;
+        }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        // add knockback
+        playerRigidBody.velocity = Vector3.zero;
+        if (isBlocking)
+        {
+            healthPercent += 2;
+            playerHealthText.text = healthPercent.ToString("F1");
+            knockbackValue = 3f + (healthPercent * baseKnockbackValue * 0.1f);
+            return;
+        }
+
+        if (other.gameObject.tag == "LeftPunch")
+        {
+            healthPercent += (2f + Random.Range(0.1f, 0.4f) * 3f);
+            playerRigidBody.AddForce(new Vector3(-knockbackValue * punchKnockbackValue, Random.Range(1, 3), 0), ForceMode.Impulse);
+        }
+        else if (other.gameObject.tag == "RightPunch")
+        {
+            healthPercent += (2f + Random.Range(0.1f, 0.4f) * 3f);
+            playerRigidBody.AddForce(new Vector3(knockbackValue * punchKnockbackValue, Random.Range(1, 3), 0), ForceMode.Impulse);
+        }
+        else if (other.gameObject.tag == "LeftKick")
+        {
+            healthPercent += (6f + Random.Range(0.1f, 0.5f) * 5f);
+            playerRigidBody.AddForce(new Vector3(-knockbackValue * kickKnockbackValue, Random.Range(1.5f, 2.5f) * knockbackValue, 0), ForceMode.Impulse);
+        }
+        else if (other.gameObject.tag == "RightKick")
+        {
+            healthPercent += (6f + Random.Range(0.1f, 0.5f) * 5f);
+            playerRigidBody.AddForce(new Vector3(knockbackValue * kickKnockbackValue, Random.Range(1.5f, 2.5f) * knockbackValue, 0), ForceMode.Impulse);
+        }
+        else if (other.gameObject.tag == "LeftRunKick")
+        {
+            healthPercent += (3f + Random.Range(0.1f, 0.7f) * 5f);
+            playerRigidBody.AddForce(new Vector3(-knockbackValue * runKickKnockbackValue, Random.Range(10, 20), 0), ForceMode.Impulse);
+        }
+        else if (other.gameObject.tag == "RightRunKick")
+        {
+            healthPercent += (3f + Random.Range(0.1f, 0.7f) * 5f);
+            playerRigidBody.AddForce(new Vector3(knockbackValue * runKickKnockbackValue, Random.Range(10, 20), 0), ForceMode.Impulse);
+        }
+        anim.Play("Head Hit");
+        playerHealthText.text = healthPercent.ToString("F1");
+
+        // recalculate knockback value
+        knockbackValue = 3f + (healthPercent * baseKnockbackValue * 0.1f);
+    }
+
+    void DoKnockBack(string tag)
+    {
+        // apply knockback physics
+        playerRigidBody.velocity = Vector3.zero;
+        if (tag == "LeftPunch" || tag == "LeftKick" || tag == "LeftRunKick")
+        {
+            if (isBlocking)
+            {
+                playerRigidBody.AddForce(new Vector3(-3, 3, 0), ForceMode.Impulse);
+            }
+            else
+            {
+                playerRigidBody.AddForce(new Vector3(-knockbackValue, 6, 0), ForceMode.Impulse);
+            }
+        }
+        else if (tag == "RightPunch" || tag == "RightKick" || tag == "RightRunKick")
+        {
+            if (isBlocking)
+            {
+                playerRigidBody.AddForce(new Vector3(3, 3, 0), ForceMode.Impulse);
+            }
+            else
+            {
+                playerRigidBody.AddForce(new Vector3(knockbackValue, 6, 0), ForceMode.Impulse);
+            }
+        }
+
+        // recalculate knockback value
+        knockbackValue = 3f + (healthPercent * baseKnockbackValue * 0.1f);
     }
 }
