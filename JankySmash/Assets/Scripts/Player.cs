@@ -89,13 +89,7 @@ public class Player : MonoBehaviour
                 return;
             }
 
-            if ((Input.GetKeyDown(KeyCode.K) || Input.GetButtonDown("Fire1")) && !isBlocking)
-            {
-                StartCoroutine(PunchCoroutine());
-                return;
-            }
-
-            if ((Input.GetKey(KeyCode.J) || Input.GetButtonDown("Block")) && !isInAnimation && !isFlyingKick && !isBlocking)
+            if ((Input.GetKey(KeyCode.J) || Input.GetButton("Block")) && !isInAnimation && !isFlyingKick && !isBlocking)
             {
                 StartCoroutine(StartBlockCoroutine());
             }
@@ -106,6 +100,16 @@ public class Player : MonoBehaviour
                 anim.speed = 1;
             }
 
+            // Animation
+            if (horizontal != 0f)
+            {
+                anim.SetBool("Run", true);
+            }
+            else
+            {
+                anim.SetBool("Run", false);
+            }
+
             if (!isInAnimation && !isFlyingKick)
             {
                 if (horizontal > 0.01f)
@@ -113,9 +117,15 @@ public class Player : MonoBehaviour
                     anim.SetBool("FaceLeft", false);
                     faceRight = true;
 
-                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("Fire2"))
+                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("B Button"))
                     {
                         StartCoroutine(RunningKickCoroutine());
+                        return;
+                    }
+                    else if (Input.GetKeyDown(KeyCode.K) || Input.GetButtonDown("A Button"))
+                    {
+                        StartCoroutine(KickCoroutine());
+                        return;
                     }
                 }
                 else if (horizontal < -0.01f)
@@ -123,18 +133,30 @@ public class Player : MonoBehaviour
                     anim.SetBool("FaceLeft", true);
                     faceRight = false;
 
-                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("Fire2"))
+                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("B Button"))
                     {
                         StartCoroutine(RunningKickCoroutine());
+                        return;
+                    }
+                    else if (Input.GetKeyDown(KeyCode.K) || Input.GetButtonDown("A Button"))
+                    {
+                        StartCoroutine(KickCoroutine());
+                        return;
                     }
                 }
                 else
                 {
-                    if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("Fire2"))
+                    if ((Input.GetKeyDown(KeyCode.K) || Input.GetButtonDown("A Button")))
                     {
-                        StartCoroutine(KickCoroutine());
+                        StartCoroutine(PunchCoroutine());
+                    }
+                    else if (Input.GetKeyDown(KeyCode.L) || Input.GetButtonDown("B Button"))
+                    {
+                        // do special move
+                        Debug.Log("Special Move");
                     }
                 }
+
             }
         }
 
@@ -146,17 +168,6 @@ public class Player : MonoBehaviour
         else if (!isInAnimation)
         {
             transform.Translate(horizontal, 0, 0);
-        }
-
-
-        // Animation
-        if (horizontal != 0f)
-        {
-            anim.SetBool("Run", true);
-        }
-        else
-        {
-            anim.SetBool("Run", false);
         }
     }
 

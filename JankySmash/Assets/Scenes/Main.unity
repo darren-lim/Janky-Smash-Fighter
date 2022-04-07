@@ -1103,10 +1103,10 @@ MonoBehaviour:
   playerHealthText: {fileID: 1636011322}
   knockbackValue: 0
   baseKnockbackValue: 1
-  punchKnockbackValue: 0.3
+  punchKnockbackValue: 0.1
   kickKnockbackValue: 3
   runKickKnockbackValue: 5
-  moveSpeed: 7
+  moveSpeed: 8
   jumpForce: 15
   onGround: 1
   faceRight: 1
@@ -1298,7 +1298,7 @@ GameObject:
   - component: {fileID: 2021968522}
   m_Layer: 0
   m_Name: Cube
-  m_TagString: LeftRunKick
+  m_TagString: LeftPunch
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
