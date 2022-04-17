@@ -1,19 +1,19 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class Player : MonoBehaviour
+public class Player2 : MonoBehaviour
 {
     public float healthPercent = 0f;
     public TMP_Text playerHealthText;
-    public float knockbackValue = 3f;
+    public float knockbackValue = 0f;
     public float baseKnockbackValue = 1f;
-    public float punchKnockbackValue = 5f;
-    public float kickKnockbackValue = 10f;
-    public float runKickKnockbackValue = 20f;
-    public float moveSpeed = 7;
-    public float jumpForce = 10;
+    public float punchKnockbackValue = 0.1f;
+    public float kickKnockbackValue = 3f;
+    public float runKickKnockbackValue = 5f;
+    public float moveSpeed = 8;
+    public float jumpForce = 15;
     public bool onGround = true;
     public bool faceRight = true;
     public bool isBlocking = false;
@@ -40,13 +40,6 @@ public class Player : MonoBehaviour
         rightKickHitbox.SetActive(false);
         rightRunningKickHitbox.SetActive(false);
         blockIndicator.SetActive(false);
-
-        string[] names = Input.GetJoystickNames();
-        for (int x = 0; x < names.Length; x++)
-        {
-            Debug.Log(x);
-            Debug.Log(names[x]);
-        }
     }
 
     // Update is called once per frame
@@ -75,8 +68,7 @@ public class Player : MonoBehaviour
         // {
         //     horizontal = Time.deltaTime * moveSpeed;
         // }
-        float horizontal = Input.GetAxis("Player 1 Horizontal") * Time.deltaTime * moveSpeed;
-        Debug.Log(Input.GetAxis("Player 1 Horizontal"));
+        float horizontal = Input.GetAxis("Horizontal 2") * Time.deltaTime * moveSpeed;
         bool isInAnimation = anim.GetCurrentAnimatorStateInfo(0).IsName("Kicking") || anim.GetCurrentAnimatorStateInfo(0).IsName("Punching") || anim.GetCurrentAnimatorStateInfo(0).IsName("Head Hit") || anim.GetCurrentAnimatorStateInfo(0).IsName("Block");
         bool isFlyingKick = anim.GetCurrentAnimatorStateInfo(0).IsName("Flying Kick");
 
@@ -88,7 +80,7 @@ public class Player : MonoBehaviour
 
         if (onGround)
         {
-            if (Input.GetButtonDown("Jump") && !isFlyingKick)
+            if ((Input.GetKeyDown(KeyCode.Space)) && !isFlyingKick)
             {
                 playerRigidBody.AddForce(new Vector3(0f, jumpForce, 0f), ForceMode.Impulse);
                 onGround = false;
@@ -97,11 +89,11 @@ public class Player : MonoBehaviour
                 return;
             }
 
-            if (Input.GetButton("Block") && !isInAnimation && !isFlyingKick && !isBlocking)
+            if ((Input.GetKey(KeyCode.J)) && !isInAnimation && !isFlyingKick && !isBlocking)
             {
                 StartCoroutine(StartBlockCoroutine());
             }
-            if (isBlocking && Input.GetButtonUp("Block"))
+            if (isBlocking && (Input.GetKeyUp(KeyCode.J)))
             {
                 StopBlocking();
                 anim.SetTrigger("BlockToIdle");
@@ -125,12 +117,12 @@ public class Player : MonoBehaviour
                     anim.SetBool("FaceLeft", false);
                     faceRight = true;
 
-                    if (Input.GetButtonDown("B Button"))
+                    if (Input.GetKeyDown(KeyCode.L))
                     {
                         StartCoroutine(RunningKickCoroutine());
                         return;
                     }
-                    else if (Input.GetButtonDown("A Button"))
+                    else if (Input.GetKeyDown(KeyCode.K))
                     {
                         StartCoroutine(KickCoroutine());
                         return;
@@ -141,12 +133,12 @@ public class Player : MonoBehaviour
                     anim.SetBool("FaceLeft", true);
                     faceRight = false;
 
-                    if (Input.GetButtonDown("B Button"))
+                    if (Input.GetKeyDown(KeyCode.L))
                     {
                         StartCoroutine(RunningKickCoroutine());
                         return;
                     }
-                    else if (Input.GetButtonDown("A Button"))
+                    else if (Input.GetKeyDown(KeyCode.K))
                     {
                         StartCoroutine(KickCoroutine());
                         return;
@@ -154,11 +146,11 @@ public class Player : MonoBehaviour
                 }
                 else
                 {
-                    if (Input.GetButtonDown("A Button"))
+                    if ((Input.GetKeyDown(KeyCode.K)))
                     {
                         StartCoroutine(PunchCoroutine());
                     }
-                    else if (Input.GetButtonDown("B Button"))
+                    else if (Input.GetKeyDown(KeyCode.L))
                     {
                         // do special move
                         Debug.Log("Special Move");
@@ -245,7 +237,7 @@ public class Player : MonoBehaviour
         isBlocking = true;
         yield return new WaitForSeconds(0.15f);
 
-        if (Input.GetButton("Block") && onGround)
+        if ((Input.GetKey(KeyCode.J) || Input.GetButton("Block 2")) && onGround)
         {
             blockIndicator.SetActive(true);
             anim.speed = 0;
